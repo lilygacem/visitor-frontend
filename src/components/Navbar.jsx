@@ -20,7 +20,7 @@ export default function Navbar({ setIsAuthenticated }) {
           <div className="flex items-center">
             <div className="flex-shrink-0 flex items-center">
               <h1 className="text-2xl font-bold text-[#70587C] hover:text-[#C8B8DB] transition-colors duration-300">
-                icosnet
+                Spintechs
               </h1>
             </div>
             <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
@@ -54,25 +54,16 @@ export default function Navbar({ setIsAuthenticated }) {
               >
                 Services
               </Link>
+
               <Link
-                to="/satisfaction"
+                to="/visites"
                 className={`$${
-                  isActive("/satisfaction")
+                  isActive("/visites")
                     ? "border-[#70587C] text-[#70587C]"
                     : "border-transparent text-gray-500 hover:border-[#C8B8DB] hover:text-[#70587C]"
                 } inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-all duration-300`}
               >
-                Satisfaction
-              </Link>
-              <Link
-                to="/satisfaction-scan"
-                className={`$${
-                  isActive("/satisfaction-scan")
-                    ? "border-[#70587C] text-[#70587C]"
-                    : "border-transparent text-gray-500 hover:border-[#C8B8DB] hover:text-[#70587C]"
-                } inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-all duration-300`}
-              >
-                Scan Satisfaction
+                Visites
               </Link>
             </div>
           </div>

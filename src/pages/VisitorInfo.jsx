@@ -270,7 +270,7 @@ export default function VisitorInfo() {
         {/* En-tête */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
           <h2 className="text-3xl font-bold bg-gradient-to-r from-[#70587C] to-[#C8B8DB] bg-clip-text text-transparent">
-            Gestion des visites
+            Gestion des visiteurs
           </h2>
 
           <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
@@ -346,9 +346,9 @@ export default function VisitorInfo() {
                 <th className="px-4 py-3 text-left text-sm font-medium text-[#70587C] w-[10%]">
                   Statut
                 </th>
-                <th className="px-4 py-3 text-right text-sm font-medium text-[#70587C] w-[7%]">
+                {/* <th className="px-4 py-3 text-right text-sm font-medium text-[#70587C] w-[7%]">
                   Actions
-                </th>
+                </th> */}
               </tr>
             </thead>
             <tbody className="divide-y divide-[#C8B8DB]/20">
@@ -439,7 +439,7 @@ export default function VisitorInfo() {
                     </select>
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <button
+                    {/* <button
                       onClick={() => handleDelete(visit.id)}
                       className="text-[#70587C] hover:text-red-600 p-1 rounded-full hover:bg-red-50 transition-colors"
                     >
@@ -455,7 +455,7 @@ export default function VisitorInfo() {
                           clipRule="evenodd"
                         />
                       </svg>
-                    </button>
+                    </button> */}
                   </td>
                 </tr>
               ))}

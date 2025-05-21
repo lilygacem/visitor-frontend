@@ -23,7 +23,7 @@ export default function Login({ setIsAuthenticated }) {
         <div className="card space-y-8">
           <div className="text-center">
             <h1 className="text-4xl font-bold bg-gradient-to-r from-[#70587C] to-[#C8B8DB] bg-clip-text text-transparent transform hover:scale-105 transition-all duration-300">
-              icosnet
+              Spintechs
             </h1>
             <h2 className="mt-6 text-2xl font-semibold text-[#70587C]">
               Connexion à votre compte

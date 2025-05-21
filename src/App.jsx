@@ -9,10 +9,9 @@ import {
 import Dashboard from "./pages/Dashboard";
 import VisitorInfo from "./pages/VisitorInfo";
 import ServiceList from "./pages/ServiceList";
-import Satisfaction from "./pages/Satisfaction";
+import Visites from "./pages/Visites";
 import Login from "./pages/Login";
 import Navbar from "./components/Navbar";
-import SatisfactionEntryScreen from "./pages/SatisfactionEntryScreen";
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -37,14 +36,12 @@ function App() {
           path="/services"
           element={isAuthenticated ? <ServiceList /> : <Navigate to="/" />}
         />
+
         <Route
-          path="/satisfaction"
-          element={isAuthenticated ? <Satisfaction /> : <Navigate to="/" />}
+          path="/visites"
+          element={isAuthenticated ? <Visites /> : <Navigate to="/" />}
         />
-        <Route
-          path="/satisfaction-scan"
-          element={<SatisfactionEntryScreen />}
-        />
+
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </Router>
