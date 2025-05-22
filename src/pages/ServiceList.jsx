@@ -1,4 +1,3 @@
-"use client";
 import { useState, useEffect } from "react";
 
 export default function ServiceList() {
@@ -78,13 +77,13 @@ export default function ServiceList() {
     const updatedServices = services.map((service) => {
       if (service.id === id) {
         const updatedService = { ...service, [field]: value };
-
+        
         // Mise à jour optimiste
         fetch(`${API_URL}/${id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(updatedService),
-        }).catch((error) => {
+        }).catch(error => {
           console.error("Erreur de synchronisation:", error);
           fetchServices(); // Rechargement si erreur
         });
@@ -126,10 +125,7 @@ export default function ServiceList() {
         </div>
 
         {/* Barre de recherche */}
-        <div
-          className="card mb-6 animate-slide-up"
-          style={{ animationDelay: "100ms" }}
-        >
+        <div className="card mb-6 animate-slide-up" style={{ animationDelay: "100ms" }}>
           <div className="relative rounded-md">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <svg
@@ -159,21 +155,12 @@ export default function ServiceList() {
         </div>
 
         {/* Tableau des services */}
-        <div
-          className="card animate-slide-up"
-          style={{ animationDelay: "200ms" }}
-        >
+        <div className="card animate-slide-up" style={{ animationDelay: "200ms" }}>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-[#C8B8DB]/30">
               <thead>
                 <tr>
-                  {[
-                    "Service",
-                    "Responsable",
-                    "Téléphone",
-                    "Statut",
-                    "Actions",
-                  ].map((header) => (
+                  {["Service", "Responsable", "Téléphone", "Statut", "Actions"].map((header) => (
                     <th
                       key={header}
                       className="px-6 py-3 text-left text-xs font-medium text-[#70587C] uppercase tracking-wider"
@@ -193,9 +180,7 @@ export default function ServiceList() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <input
                         value={service.nomService}
-                        onChange={(e) =>
-                          handleEdit(service.id, "nomService", e.target.value)
-                        }
+                        onChange={(e) => handleEdit(service.id, "nomService", e.target.value)}
                         className="block w-full text-sm border-[#C8B8DB] rounded-lg bg-white/70 text-[#70587C]
                                  focus:ring-2 focus:ring-[#70587C] focus:border-transparent transition-all duration-300"
                       />
@@ -203,9 +188,7 @@ export default function ServiceList() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <input
                         value={service.responsable}
-                        onChange={(e) =>
-                          handleEdit(service.id, "responsable", e.target.value)
-                        }
+                        onChange={(e) => handleEdit(service.id, "responsable", e.target.value)}
                         className="block w-full text-sm border-[#C8B8DB] rounded-lg bg-white/70 text-[#70587C]
                                  focus:ring-2 focus:ring-[#70587C] focus:border-transparent transition-all duration-300"
                       />
@@ -213,30 +196,22 @@ export default function ServiceList() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <input
                         value={service.telephone}
-                        onChange={(e) =>
-                          handleEdit(service.id, "telephone", e.target.value)
-                        }
+                        onChange={(e) => handleEdit(service.id, "telephone", e.target.value)}
                         className="block w-full text-sm border-[#C8B8DB] rounded-lg bg-white/70 text-[#70587C]
                                  focus:ring-2 focus:ring-[#70587C] focus:border-transparent transition-all duration-300"
                       />
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <select
+                    <select
                         value={service.statut}
-                        onChange={(e) =>
-                          handleEdit(service.id, "statut", e.target.value)
-                        }
+                        onChange={(e) => handleEdit(service.id, "statut", e.target.value)}
                         className={`block w-full text-sm rounded-lg border-[#C8B8DB] bg-white/70
                                   focus:ring-2 focus:ring-[#70587C] focus:border-transparent transition-all duration-300
-                                  ${
-                                    service.statut === "libre"
-                                      ? "text-green-600"
-                                      : "text-amber-600"
-                                  }`}
-                      >
+                                  ${service.statut === "libre" ? "text-green-600" : "text-amber-600"}`}
+                    >
                         <option value="libre">Libre</option>
                         <option value="occupé">Occupé</option>
-                      </select>
+                    </select>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <button
