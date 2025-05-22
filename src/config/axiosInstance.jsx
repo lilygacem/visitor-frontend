@@ -1,18 +1,17 @@
 import axios from "axios";
-import config from "../config";
 
-const axiosInstance = axios.create({
-  baseURL: config.apiUrl,
+const instance = axios.create({
+  baseURL: "http://localhost:8060",
   headers: {
     "Content-Type": "application/json",
     Accept: "application/json",
   },
+  withCredentials: true, // Active l'envoi des cookies (si utilisé)
 });
 
-// Add a request interceptor
-axiosInstance.interceptors.request.use(
+// Intercepteur de requête
+instance.interceptors.request.use(
   (config) => {
-    // Do something before request is sent
     const token = localStorage.getItem("token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -20,26 +19,27 @@ axiosInstance.interceptors.request.use(
     return config;
   },
   (error) => {
-    // Do something with request error
     return Promise.reject(error);
   }
 );
 
-// Add a response interceptor
-axiosInstance.interceptors.response.use(
+// Intercepteur de réponse
+instance.interceptors.response.use(
   (response) => {
-    // Do something with response data
     return response;
   },
   (error) => {
-    // Do something with response error
-    if (error.response.status === 401) {
-      // Handle unauthorized access
+    const { status } = error.response || {};
+    
+    if (status === 401 || status === 403) {
+      // Supprime le token et redirige vers /login pour les erreurs 401/403
       localStorage.removeItem("token");
+      localStorage.removeItem("role");
       window.location.href = "/login";
     }
+    
     return Promise.reject(error);
   }
 );
 
-export default axiosInstance;
+export default instance;
