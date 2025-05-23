@@ -1,35 +1,28 @@
 "use client";
 import { useState, useEffect } from "react";
+import axiosInstance from "../config/axiosInstance";
 
 export default function VisitorInfo() {
-  const API_URL = "http://localhost:8060/api/visits";
-  const SERVICES_API = "http://localhost:8060/api/services";
-
   const [search, setSearch] = useState("");
   const [visitors, setVisitors] = useState([]);
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Formatage des dates pour l'input datetime-local
   const formatDate = (dateString) => {
     if (!dateString) return "";
     return new Date(dateString).toISOString().slice(0, 16);
   };
 
-  // Function to fetch data that can be reused
   const fetchData = async () => {
     try {
       const [servicesRes, visitsRes] = await Promise.all([
-        fetch(SERVICES_API),
-        fetch(API_URL),
+        axiosInstance.get("/services"),
+        axiosInstance.get("/visits"),
       ]);
 
-      if (!servicesRes.ok || !visitsRes.ok)
-        throw new Error("Erreur de chargement");
-
-      const servicesData = await servicesRes.json();
-      const visitsData = await visitsRes.json();
+      const servicesData = servicesRes.data;
+      const visitsData = visitsRes.data;
 
       const mappedVisits = visitsData.map((visit) => ({
         ...visit,
@@ -43,18 +36,16 @@ export default function VisitorInfo() {
       setServices(servicesData);
       setVisitors(mappedVisits);
     } catch (err) {
-      setError(err.message);
+      setError(err.message || "Erreur de chargement");
     } finally {
       setLoading(false);
     }
   };
 
-  // Initial data loading
   useEffect(() => {
     fetchData();
   }, []);
 
-  // Search functionality with debounce
   useEffect(() => {
     const searchVisitors = async () => {
       if (!search.trim()) {
@@ -62,19 +53,15 @@ export default function VisitorInfo() {
       }
 
       try {
-        const response = await fetch(
-          `${API_URL}/search?query=${encodeURIComponent(search)}`
+        const response = await axiosInstance.get(
+          `/visits/search?query=${encodeURIComponent(search)}`
         );
-        if (!response.ok) throw new Error("Erreur de recherche");
+        const data = response.data;
 
-        const data = await response.json();
-
-        // Utilise la liste des services la plus à jour
         let currentServices = services;
-        // Si la liste est vide, recharge-la
         if (!currentServices.length) {
-          const res = await fetch(SERVICES_API);
-          currentServices = await res.json();
+          const res = await axiosInstance.get("/services");
+          currentServices = res.data;
           setServices(currentServices);
         }
 
@@ -88,8 +75,8 @@ export default function VisitorInfo() {
         }));
 
         setVisitors(mappedVisits);
-      } catch (error) {
-        console.error("Erreur de recherche:", error);
+      } catch (err) {
+        console.error("Erreur de recherche:", err.message);
       }
     };
 
@@ -97,141 +84,73 @@ export default function VisitorInfo() {
     return () => clearTimeout(debounceTimer);
   }, [search]);
 
-  // FIXED ADD FUNCTION - CORRECTED DATE FORMAT
   const handleAdd = async () => {
     try {
-      // Make sure we have at least one service
       if (services.length === 0) {
-        alert("Aucun service disponible. Impossible d'ajouter une visite.");
+        alert("Aucun service disponible.");
         return;
       }
 
-      // Format the date correctly for the backend
-      // The backend expects a format like: "2023-05-03T11:05:49" (without the Z)
-      const now = new Date();
-      const formattedDate = now.toISOString().slice(0, 19); // Remove milliseconds and Z
-
-      // Create the payload exactly as the backend expects it
+      const now = new Date().toISOString().slice(0, 19);
       const payload = {
         nom: "Nouveau",
         prenom: "Visiteur",
         numeroId: "000000",
-        heureArrivee: formattedDate, // Correctly formatted date
-        serviceId: services[0].id, // Use the first service
+        heureArrivee: now,
+        serviceId: services[0].id,
         statut: "EN_ATTENTE",
       };
 
-      console.log("Sending payload:", payload);
-
-      // Send the request
-      const response = await fetch(API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Server error: ${response.status} - ${errorText}`);
-      }
-
-      // Refresh data to show the new visit
+      await axiosInstance.post("/visits", payload);
       fetchData();
-
-      console.log("Visit added successfully");
     } catch (err) {
-      console.error("Error adding visit:", err);
       alert(`Erreur lors de l'ajout: ${err.message}`);
     }
   };
 
-  // COMPLETELY REVISED EDIT FUNCTION
   const handleEdit = async (id, field, value) => {
     try {
       const currentVisit = visitors.find((v) => v.id === id);
-      if (!currentVisit) {
-        console.error("Visit not found:", id);
-        return;
-      }
+      if (!currentVisit) return;
 
       const updatedVisit = { ...currentVisit };
 
       if (field === "service") {
         const serviceObj = services.find((s) => s.nomService === value);
-        if (serviceObj) {
-          updatedVisit.service = value;
-          updatedVisit.serviceId = serviceObj.id;
-        } else {
-          console.error("Service not found:", value);
-          return;
-        }
+        if (!serviceObj) return;
+        updatedVisit.service = value;
+        updatedVisit.serviceId = serviceObj.id;
       } else if (field.startsWith("heure")) {
         updatedVisit[field] = value
           ? new Date(value).toISOString().slice(0, 19)
           : null;
       } else if (field === "statut") {
-        // Si on change le statut, utiliser l'endpoint spécifique
-        const response = await fetch(
-          `${API_URL}/${id}/statut?statut=${value}`,
-          {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error("Échec de la mise à jour du statut");
-        }
-
-        // Rafraîchir les données après la mise à jour
-        fetchData();
-        return;
+        await axiosInstance.put(`/visits/${id}/statut`, null, {
+          params: { statut: value },
+        });
+        return fetchData();
       } else {
         updatedVisit[field] = value;
       }
 
-      // Update UI immediately (optimistic update)
-      setVisitors(visitors.map((v) => (v.id === id ? updatedVisit : v)));
+      setVisitors((prev) => prev.map((v) => (v.id === id ? updatedVisit : v)));
 
-      // Prepare the payload for the backend
-      // This is the critical part - we need to match exactly what the backend expects
       const payload = {
-        id: id,
+        id: updatedVisit.id,
         nom: updatedVisit.nom,
         prenom: updatedVisit.prenom,
         numeroId: updatedVisit.numeroId,
-        visitDate: updatedVisit.heureArrivee
-          ? updatedVisit.heureArrivee.slice(0, 19)
-          : null,
-        exitDate: updatedVisit.heureSortie
-          ? updatedVisit.heureSortie.slice(0, 19)
-          : null,
+        visitDate: updatedVisit.heureArrivee?.slice(0, 19),
+        exitDate: updatedVisit.heureSortie?.slice(0, 19),
         service: {
           id: updatedVisit.serviceId,
         },
-        status: updatedVisit.statut, // Envoie directement la valeur du statut
+        status: updatedVisit.statut,
       };
 
-      console.log("Sending update payload:", payload);
-
-      // Send the update to the server
-      const response = await fetch(`${API_URL}/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`Update failed: ${response.status} - ${errorText}`);
-        // Refresh data to ensure UI is in sync with server
-        fetchData();
-      } else {
-        console.log("Update successful for field:", field);
-      }
+      await axiosInstance.put(`/visits/${id}`, payload);
     } catch (err) {
-      console.error("Error updating visit:", err);
-      // Refresh data to ensure UI is in sync with server
+      console.error("Erreur de mise à jour:", err.message);
       fetchData();
     }
   };
@@ -239,24 +158,12 @@ export default function VisitorInfo() {
   const handleDelete = async (id) => {
     if (!confirm("Supprimer cette visite ?")) return;
 
-    // Update UI immediately (optimistic delete)
-    setVisitors(visitors.filter((v) => v.id !== id));
+    setVisitors((prev) => prev.filter((v) => v.id !== id));
 
-    // Then delete from server
     try {
-      const response = await fetch(`${API_URL}/${id}`, { method: "DELETE" });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`Delete failed: ${response.status} - ${errorText}`);
-        // Refresh data if delete failed
-        fetchData();
-      } else {
-        console.log("Delete successful for ID:", id);
-      }
+      await axiosInstance.delete(`/visits/${id}`);
     } catch (err) {
-      console.error("Error deleting visit:", err);
-      // Refresh data to ensure UI is in sync with server
+      console.error("Erreur de suppression:", err.message);
       fetchData();
     }
   };
@@ -264,6 +171,7 @@ export default function VisitorInfo() {
   if (loading) return <div className="p-4">Chargement en cours...</div>;
   if (error) return <div className="p-4 text-red-500">Erreur : {error}</div>;
 
+  // ⬇️ Return JSX remains unchanged from your code (table, UI layout etc.)
   return (
     <div className="min-h-screen py-6 px-4 sm:px-6 lg:px-8 animate-fade-in bg-gray-50">
       <div className="max-w-7xl mx-auto">

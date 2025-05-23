@@ -1,55 +1,70 @@
 "use client";
 import { useState, useEffect } from "react";
+import axiosInstance from "../config/axiosInstance";
 
 export default function Visites() {
-  const API_URL = "http://localhost:8060/api/visits/stats";
+  // Use the proper base URL matching backend
+  const API_URL = "/visits";
 
   const [search, setSearch] = useState("");
-  const [visitors, setVisitors] = useState([]);
+  const [visits, setVisits] = useState([]); // Rename visitors to visits (backend returns visits)
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Fetch stats data
+  // Fetch all visits
   const fetchData = async () => {
+    setLoading(true);
+    setError(null);
     try {
-      const res = await fetch(API_URL);
-      if (!res.ok) throw new Error("Erreur de chargement");
-      const data = await res.json();
-      setVisitors(data);
+      const { data } = await axiosInstance.get(API_URL);
+      setVisits(data);
     } catch (err) {
-      setError(err.message);
+      setError(
+        err.response?.data?.message ?? err.message ?? "Erreur de chargement"
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  // Initial data loading
   useEffect(() => {
     fetchData();
   }, []);
 
-  // Search functionality with debounce
+  // Search visits
   useEffect(() => {
-    const searchVisitors = async () => {
+    const handler = setTimeout(async () => {
       if (!search.trim()) {
-        return fetchData();
+        fetchData();
+        return;
       }
+      setLoading(true);
+      setError(null);
       try {
-        const response = await fetch(
-          `${API_URL}/search?query=${encodeURIComponent(search)}`
+        const { data } = await axiosInstance.get(`${API_URL}/search`, {
+          params: { query: search },
+        });
+        setVisits(data);
+      } catch (err) {
+        setError(
+          err.response?.data?.message ?? err.message ?? "Erreur de recherche"
         );
-        if (!response.ok) throw new Error("Erreur de recherche");
-        const data = await response.json();
-        setVisitors(data);
-      } catch (error) {
-        console.error("Erreur de recherche:", error);
+      } finally {
+        setLoading(false);
       }
-    };
-    const debounceTimer = setTimeout(searchVisitors, 300);
-    return () => clearTimeout(debounceTimer);
+    }, 300);
+
+    return () => clearTimeout(handler);
   }, [search]);
 
-  // Helper to format duration in minutes/hours
+  // Helper to parse ISO datetime and calculate duration in minutes between arrivee and sortie
+  const calcDuration = (arrivee, sortie) => {
+    if (!arrivee || !sortie) return null;
+    const diffMs = new Date(sortie) - new Date(arrivee);
+    if (diffMs <= 0) return null;
+    return diffMs / 60000; // ms to minutes
+  };
+
   const formatDuration = (minutes) => {
     if (minutes == null) return "-";
     if (minutes < 60) return `${Math.round(minutes)} min`;
@@ -64,7 +79,7 @@ export default function Visites() {
   return (
     <div className="min-h-screen py-6 px-4 sm:px-6 lg:px-8 animate-fade-in bg-gray-50">
       <div className="max-w-7xl mx-auto">
-        {/* En-tête */}
+        {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
           <h2 className="text-3xl font-bold bg-gradient-to-r from-[#70587C] to-[#C8B8DB] bg-clip-text text-transparent">
             Statistiques des visites
@@ -97,13 +112,13 @@ export default function Visites() {
           </div>
         </div>
 
-        {/* Tableau */}
+        {/* Table */}
         <div className="bg-white rounded-lg shadow-sm border border-[#C8B8DB]/20 overflow-hidden">
           <table className="min-w-full divide-y divide-[#C8B8DB]/20">
             <thead className="bg-[#F5F0FA]">
               <tr>
                 <th className="px-4 py-3 text-left text-sm font-medium text-[#70587C] w-[15%]">
-                  ID Visiteur
+                  ID Visite
                 </th>
                 <th className="px-4 py-3 text-left text-sm font-medium text-[#70587C] w-[25%]">
                   Nom
@@ -112,28 +127,28 @@ export default function Visites() {
                   Prénom
                 </th>
                 <th className="px-4 py-3 text-left text-sm font-medium text-[#70587C] w-[20%]">
-                  Durée moyenne
+                  Durée de visite
                 </th>
                 <th className="px-4 py-3 text-left text-sm font-medium text-[#70587C] w-[15%]">
-                  Nombre de visites
+                  Statut
                 </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#C8B8DB]/20">
-              {visitors.map((visitor) => (
-                <tr
-                  key={visitor.id}
-                  className="hover:bg-[#F9F7FC] transition-colors"
-                >
-                  <td className="px-4 py-3">{visitor.id}</td>
-                  <td className="px-4 py-3">{visitor.nom}</td>
-                  <td className="px-4 py-3">{visitor.prenom}</td>
-                  <td className="px-4 py-3">
-                    {formatDuration(visitor.dureeMoyenne)}
-                  </td>
-                  <td className="px-4 py-3">{visitor.nombreVisites}</td>
-                </tr>
-              ))}
+              {visits.map(
+                ({ id, nom, prenom, heureArrivee, heureSortie, statut }) => {
+                  const dureeMoyenne = calcDuration(heureArrivee, heureSortie);
+                  return (
+                    <tr key={id} className="hover:bg-[#F9F7FC] transition-colors">
+                      <td className="px-4 py-3">{id}</td>
+                      <td className="px-4 py-3">{nom}</td>
+                      <td className="px-4 py-3">{prenom}</td>
+                      <td className="px-4 py-3">{formatDuration(dureeMoyenne)}</td>
+                      <td className="px-4 py-3">{statut}</td>
+                    </tr>
+                  );
+                }
+              )}
             </tbody>
           </table>
         </div>

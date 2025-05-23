@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import useAuthStore from "../store/authSlice";
+import useAuthStore from "../store/authStore";
 import { BeatLoader } from "react-spinners";
 
 export default function Login() {
   const [credentials, setCredentials] = useState({
-    ID: "",
+    username: "",
     password: "",
   });
   const [error, setError] = useState("");
@@ -15,42 +15,38 @@ export default function Login() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setCredentials((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setCredentials((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  setError("");
+    e.preventDefault();
+    setError("");
 
-  if (!credentials.ID || !credentials.password) {
-    setError("Veuillez remplir tous les champs");
-    return;
-  }
-
-  setIsLoading(true);
-
-  try {
-    // Modifiez ici pour envoyer 'username' au lieu de 'ID'
-    const success = await login({
-      username: credentials.ID,  // Transformation ici
-      password: credentials.password
-    });
-    
-    if (success) {
-      navigate("/Dashboard");
+    if (!credentials.username || !credentials.password) {
+      setError("Veuillez remplir tous les champs");
+      return;
     }
-  } catch (err) {
-    setError(
-      err.response?.data?.message ||
-      "Échec de la connexion. Veuillez vérifier vos identifiants."
-    );
-  } finally {
-    setIsLoading(false);
-  }
-};
+
+    setIsLoading(true);
+
+    try {
+      const success = await login({
+        username: credentials.username,
+        password: credentials.password,
+      });
+
+      if (success) {
+        navigate("/dashboard");
+      }
+    } catch (err) {
+      setError(
+        err.message ||
+          "Échec de la connexion. Veuillez vérifier vos identifiants."
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#F8F4FF] to-[#E8E0F0] py-12 px-4 sm:px-6 lg:px-8">
@@ -92,17 +88,17 @@ export default function Login() {
           <div className="space-y-4">
             <div>
               <label
-                htmlFor="ID"
+                htmlFor="username"
                 className="block text-sm font-medium text-gray-700 mb-1"
               >
                 Identifiant
               </label>
               <input
-                id="ID"
-                name="ID"
+                id="username"
+                name="username"
                 type="text"
                 required
-                value={credentials.ID}
+                value={credentials.username}
                 onChange={handleChange}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#70587C] focus:border-transparent transition-all duration-300"
                 placeholder="Entrez votre identifiant"
@@ -136,7 +132,9 @@ export default function Login() {
               className={`group relative w-full flex justify-center py-3 px-4 text-sm font-medium rounded-lg
                        bg-gradient-to-r from-[#70587C] to-[#C8B8DB] text-white
                        hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#70587C]
-                       transition-all duration-300 ${isLoading ? "opacity-80" : ""}`}
+                       transition-all duration-300 ${
+                         isLoading ? "opacity-80" : ""
+                       }`}
               disabled={isLoading}
             >
               {isLoading ? (

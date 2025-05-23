@@ -1,17 +1,28 @@
 "use client";
 import { useState, useEffect } from "react";
+import axios from "axios";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import fr from "date-fns/locale/fr";
 
-export default function Dashboard() {
-  const API_URL = "http://localhost:8060/api/visits";
+// axios instance for dashboard with token interceptor
+const axiosInstance = axios.create({
+  baseURL: import.meta.env.VITE_API_URL + "/visits",
+});
 
-  const [stats, setStats] = useState({
-    total: 0,
-    presents: 0,
-    pending: 0,
-  });
+axiosInstance.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+export default function Dashboard() {
+  const [stats, setStats] = useState({ total: 0, presents: 0, pending: 0 });
   const [recentVisitors, setRecentVisitors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -19,21 +30,17 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        // Fetch stats
-        const statsResponse = await fetch(`${API_URL}/count/today`);
-        if (!statsResponse.ok)
-          throw new Error("Erreur de chargement des statistiques");
-        const statsData = await statsResponse.json();
+        const { data: statsData } = await axiosInstance.get("/count/today");
         setStats(statsData);
 
-        // Fetch recent visitors
-        const visitorsResponse = await fetch(`${API_URL}/recent`);
-        if (!visitorsResponse.ok)
-          throw new Error("Erreur de chargement des visiteurs");
-        const visitorsData = await visitorsResponse.json();
+        const { data: visitorsData } = await axiosInstance.get("/recent");
         setRecentVisitors(visitorsData);
       } catch (err) {
-        setError(err.message);
+        setError(
+          err.response?.data?.message ||
+            err.message ||
+            "Erreur inconnue lors du chargement des données"
+        );
       } finally {
         setLoading(false);
       }
@@ -45,176 +52,57 @@ export default function Dashboard() {
   if (loading)
     return (
       <div className="flex justify-center items-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#70587C]"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
       </div>
     );
 
   if (error)
     return (
-      <div className="p-4 text-red-500">
-        Erreur : {error}
-        <button
-          onClick={() => window.location.reload()}
-          className="ml-4 px-4 py-2 bg-[#70587C] text-white rounded"
-        >
-          Réessayer
-        </button>
+      <div className="text-red-600 text-center mt-10">
+        <p>Erreur : {error}</p>
       </div>
     );
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={fr}>
-      <div className="min-h-screen bg-gradient-to-br from-[#70587C]/5 to-[#C8B8DB]/5 py-6 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-[#70587C] to-[#C8B8DB] bg-clip-text text-transparent mb-8">
-            Tableau de Bord
-          </h1>
+      <div className="max-w-7xl mx-auto px-6 py-10">
+        <h1 className="text-3xl font-bold mb-6 text-center text-[#70587C]">
+          Dashboard
+        </h1>
 
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 mb-8">
-            {/* Total Visitors */}
-            <div className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-              <div className="p-5">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0 bg-[#70587C] text-white p-3 rounded-lg">
-                    <svg
-                      className="h-6 w-6"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
-                      />
-                    </svg>
-                  </div>
-                  <div className="ml-5">
-                    <h3 className="text-sm font-medium text-gray-500">
-                      Visiteurs aujourd'hui
-                    </h3>
-                    <p className="text-2xl font-semibold text-[#70587C]">
-                      {stats.total}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Present Visitors */}
-            <div className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-              <div className="p-5">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0 bg-green-500 text-white p-3 rounded-lg">
-                    <svg
-                      className="h-6 w-6"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                      />
-                    </svg>
-                  </div>
-                  <div className="ml-5">
-                    <h3 className="text-sm font-medium text-gray-500">
-                      Visiteurs présents
-                    </h3>
-                    <p className="text-2xl font-semibold text-green-600">
-                      {stats.presents}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Pending Visitors */}
-            <div className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-              <div className="p-5">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0 bg-amber-500 text-white p-3 rounded-lg">
-                    <svg
-                      className="h-6 w-6"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                      />
-                    </svg>
-                  </div>
-                  <div className="ml-5">
-                    <h3 className="text-sm font-medium text-gray-500">
-                      Visiteurs en attente
-                    </h3>
-                    <p className="text-2xl font-semibold text-amber-600">
-                      {stats.pending}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-10">
+          <div className="bg-gradient-to-r from-purple-200 to-purple-400 rounded-lg p-6 text-center shadow-md">
+            <h2 className="text-xl font-semibold text-gray-700">Total</h2>
+            <p className="text-4xl font-bold text-[#70587C]">{stats.total}</p>
           </div>
-
-          {/* Recent Visitors */}
-          <div className="bg-white rounded-xl shadow-md overflow-hidden">
-            <div className="px-6 py-5">
-              <h2 className="text-xl font-semibold text-[#70587C] mb-4">
-                Derniers visiteurs
-              </h2>
-              <div className="space-y-4">
-                {recentVisitors.length > 0 ? (
-                  recentVisitors.map((visitor) => (
-                    <div
-                      key={visitor.id}
-                      className="flex items-center p-3 hover:bg-gray-50 rounded-lg transition-colors"
-                    >
-                      <div className="flex-shrink-0 bg-[#70587C] text-white h-10 w-10 rounded-full flex items-center justify-center">
-                        {visitor.nom.charAt(0)}
-                        {visitor.prenom.charAt(0)}
-                      </div>
-                      <div className="ml-4 flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 truncate">
-                          {visitor.nom} {visitor.prenom}
-                        </p>
-                        <p
-                          className={`text-sm ${
-                            visitor.statut === "PRESENT"
-                              ? "text-green-600"
-                              : "text-amber-600"
-                          }`}
-                        >
-                          {visitor.statut === "PRESENT"
-                            ? "Présent"
-                            : "En attente"}
-                        </p>
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        {new Date(visitor.heureArrivee).toLocaleTimeString(
-                          "fr-FR",
-                          { hour: "2-digit", minute: "2-digit" }
-                        )}
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-gray-500 text-center py-4">
-                    Aucun visiteur récent
-                  </p>
-                )}
-              </div>
-            </div>
+          <div className="bg-gradient-to-r from-green-200 to-green-400 rounded-lg p-6 text-center shadow-md">
+            <h2 className="text-xl font-semibold text-gray-700">Présents</h2>
+            <p className="text-4xl font-bold text-[#70587C]">
+              {stats.presents}
+            </p>
           </div>
+          <div className="bg-gradient-to-r from-yellow-200 to-yellow-400 rounded-lg p-6 text-center shadow-md">
+            <h2 className="text-xl font-semibold text-gray-700">En attente</h2>
+            <p className="text-4xl font-bold text-[#70587C]">{stats.pending}</p>
+          </div>
+        </div>
+
+        <div className="bg-white shadow-md rounded-lg p-6">
+          <h2 className="text-2xl font-semibold text-[#70587C] mb-4">
+            Visiteurs récents
+          </h2>
+          {recentVisitors.length === 0 ? (
+            <p className="text-center text-gray-500">Aucun visiteur récent.</p>
+          ) : (
+            <ul className="divide-y divide-gray-200">
+              {recentVisitors.map((visitor) => (
+                <li key={visitor.id} className="py-3 flex justify-between">
+                  <span>{visitor.name}</span>
+                  <span className="text-gray-600">{visitor.visitDate}</span>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </div>
     </LocalizationProvider>
